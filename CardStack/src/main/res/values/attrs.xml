@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="CardStack">
+        <attr name="animateRotationCard" format="boolean" />
+        <attr name="stickNextCardToTop" format="boolean" />
+        <attr name="simpleDismissAnimation" format="boolean" />
+        <attr name="rotateCardDeck" format="boolean" />
+        <attr name="randomBackgroundColor" format="boolean" />
+    </declare-styleable>
+
+</resources>
