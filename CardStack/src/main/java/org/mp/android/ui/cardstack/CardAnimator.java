@@ -122,13 +122,11 @@ public class CardAnimator {
         int size = mCardCollection.size();
         for (View v : mCardCollection) {
             int index = mCardCollection.indexOf(v);
-            if (index != 0) {
-                index -= 1;
-            }
             LayoutParams params = new LayoutParams(baseLayout);
             v.setLayoutParams(params);
 
-            CardUtils.scale(v, -(size - index - 1) * 5);
+            //CardUtils.scale(v, - (size - index - 1) * 5);
+            CardUtils.scale(v, (index * 5));
             CardUtils.move(v, index * mStackMargin, 0);
             v.setRotation(0);
         }

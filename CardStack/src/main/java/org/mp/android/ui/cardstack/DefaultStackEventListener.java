@@ -38,5 +38,10 @@ public class DefaultStackEventListener implements CardStack.CardEventListener {
 
     }
 
+    @Override
+    public void longPressTopCardTapped() {
+
+    }
+
 
 }

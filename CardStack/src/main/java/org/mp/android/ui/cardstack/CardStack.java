@@ -20,6 +20,8 @@ public class CardStack extends RelativeLayout {
     private static final String LOG_TAG = "CardStack";
     private int mIndex = 0;
     private int mNumVisible = 4;
+    private int mOriginalNumVisible = mNumVisible;
+    private boolean mReDraw = false;
     private ArrayAdapter<?> mAdapter;
     private OnTouchListener mOnTouchListener;
     private CardAnimator mCardAnimator;
@@ -60,6 +62,8 @@ public class CardStack extends RelativeLayout {
         void discarded(int mIndex, int direction);
 
         void topCardTapped();
+
+        void longPressTopCardTapped();
     }
 
     public boolean isRotateCardDeck() {
@@ -250,6 +254,7 @@ public class CardStack extends RelativeLayout {
 
     public void setVisibleCardNum(int visiableNum) {
         mNumVisible = visiableNum;
+        mOriginalNumVisible = mNumVisible;
         reset(false);
     }
 
@@ -262,103 +267,126 @@ public class CardStack extends RelativeLayout {
     }
 
     private void setupAnimation() {
+        boolean addDragListener = true;
         final View cardView = viewCollection.get(viewCollection.size() - 1);
         mCardAnimator = new CardAnimator(viewCollection, mAnimateRotationCard, mStickNextCardToTop, mSimpleDismissAnimation, mRandomBackgroundColor);
         mCardAnimator.initLayout();
 
-        final DragGestureDetector dd = new DragGestureDetector(CardStack.this.getContext(), new DragGestureDetector.DragListener() {
-
-            @Override
-            public boolean onDragStart(MotionEvent e1, MotionEvent e2,
-                                       float distanceX, float distanceY) {
-                mCardAnimator.drag(e1, e2, distanceX, distanceY);
-                return true;
-            }
-
-            @Override
-            public boolean onDragContinue(MotionEvent e1, MotionEvent e2,
-                                          float distanceX, float distanceY) {
-                float x1 = e1.getRawX();
-                float y1 = e1.getRawY();
-                float x2 = e2.getRawX();
-                float y2 = e2.getRawY();
-                //float distance = CardUtils.distance(x1,y1,x2,y2);
-                final int direction = CardUtils.direction(x1, y1, x2, y2);
-                mCardAnimator.drag(e1, e2, distanceX, distanceY);
-                mEventListener.swipeContinue(direction, Math.abs(x2 - x1), Math.abs(y2 - y1));
-                return true;
-            }
-
-            @Override
-            public boolean onDragEnd(MotionEvent e1, MotionEvent e2) {
-                //reverse(e1,e2);
-                float x1 = e1.getRawX();
-                float y1 = e1.getRawY();
-                float x2 = e2.getRawX();
-                float y2 = e2.getRawY();
-                float distance = CardUtils.distance(x1, y1, x2, y2);
-                final int direction = CardUtils.direction(x1, y1, x2, y2);
-
-                boolean discard = mEventListener.swipeEnd(direction, distance);
-                if (discard) {
-                    mCardAnimator.discard(direction, new AnimatorListenerAdapter() {
-
-                        @Override
-                        public void onAnimationEnd(Animator arg0) {
-                            mCardAnimator.initLayout();
-                            mIndex++;
-
-                            //mIndex = mIndex%mAdapter.getCount();
-                            loadLast();
-
-                            //Para rotar el arreglo...
-                            if (mRestartIndex && mIndex > (mAdapter.getCount() - 1)) {
-                                mIndex = 0;
-                                mRestartIndex = false;
-                            }
-                            mEventListener.discarded(mIndex, direction);
-
-                            viewCollection.get(0).setOnTouchListener(null);
-                            viewCollection.get(viewCollection.size() - 1)
-                                    .setOnTouchListener(mOnTouchListener);
-                        }
-
-                    });
-                } else {
-                    mCardAnimator.reverse(e1, e2);
-                }
-                return true;
-            }
-
-            @Override
-            public boolean onTapUp() {
-                mEventListener.topCardTapped();
-                return true;
+        if (mRotateCardDeck) {
+            if (viewCollection.size() <= 1) {
+                addDragListener = false;
             }
         }
-        );
+        if (addDragListener) {
+            final DragGestureDetector dd = new DragGestureDetector(CardStack.this.getContext(), new DragGestureDetector.DragListener() {
 
-        mOnTouchListener = new OnTouchListener() {
-            private static final String DEBUG_TAG = "MotionEvents";
+                @Override
+                public boolean onDragStart(MotionEvent e1, MotionEvent e2,
+                                           float distanceX, float distanceY) {
+                    mCardAnimator.drag(e1, e2, distanceX, distanceY);
+                    return true;
+                }
 
-            @Override
-            public boolean onTouch(View arg0, MotionEvent event) {
-                dd.onTouchEvent(event);
-                return true;
+                @Override
+                public boolean onDragContinue(MotionEvent e1, MotionEvent e2,
+                                              float distanceX, float distanceY) {
+                    float x1 = e1.getRawX();
+                    float y1 = e1.getRawY();
+                    float x2 = e2.getRawX();
+                    float y2 = e2.getRawY();
+                    //float distance = CardUtils.distance(x1,y1,x2,y2);
+                    final int direction = CardUtils.direction(x1, y1, x2, y2);
+                    mCardAnimator.drag(e1, e2, distanceX, distanceY);
+                    mEventListener.swipeContinue(direction, Math.abs(x2 - x1), Math.abs(y2 - y1));
+                    return true;
+                }
+
+                @Override
+                public boolean onDragEnd(MotionEvent e1, MotionEvent e2) {
+                    //reverse(e1,e2);
+                    float x1 = e1.getRawX();
+                    float y1 = e1.getRawY();
+                    float x2 = e2.getRawX();
+                    float y2 = e2.getRawY();
+                    float distance = CardUtils.distance(x1, y1, x2, y2);
+                    final int direction = CardUtils.direction(x1, y1, x2, y2);
+
+                    boolean discard = mEventListener.swipeEnd(direction, distance);
+                    if (discard) {
+                        mCardAnimator.discard(direction, new AnimatorListenerAdapter() {
+
+                            @Override
+                            public void onAnimationEnd(Animator arg0) {
+                                mCardAnimator.initLayout();
+                                mIndex++;
+
+                                //mIndex = mIndex%mAdapter.getCount();
+                                loadLast();
+
+                                //Para rotar el arreglo...
+                                if (mRestartIndex && mIndex > (mAdapter.getCount() - 1)) {
+                                    mIndex = 0;
+                                    mRestartIndex = false;
+                                }
+                                mEventListener.discarded(mIndex, direction);
+
+                                viewCollection.get(0).setOnTouchListener(null);
+                                viewCollection.get(viewCollection.size() - 1)
+                                        .setOnTouchListener(mOnTouchListener);
+                            }
+
+                        });
+                    } else {
+                        mCardAnimator.reverse(e1, e2);
+                    }
+                    return true;
+                }
+
+                @Override
+                public boolean onTapUp() {
+                    mEventListener.topCardTapped();
+                    return true;
+                }
+
+                @Override
+                public void onLongPress() {
+                    mEventListener.longPressTopCardTapped();
+                }
             }
-        };
-        cardView.setOnTouchListener(mOnTouchListener);
+            );
+
+            mOnTouchListener = new OnTouchListener() {
+                private static final String DEBUG_TAG = "MotionEvents";
+
+                @Override
+                public boolean onTouch(View arg0, MotionEvent event) {
+                    dd.onTouchEvent(event);
+                    return true;
+                }
+            };
+            cardView.setOnTouchListener(mOnTouchListener);
+        }
+
     }
 
     private DataSetObserver mOb = new DataSetObserver() {
         @Override
         public void onChanged() {
+            checkRedraw();
             reset(false);
         }
     };
 
+    private void checkRedraw() {
+        if (mAdapter.getCount() <= mOriginalNumVisible) {
+            mNumVisible = mAdapter.getCount();
+            mReDraw = true;
+        } else {
+            mNumVisible = mOriginalNumVisible;
+            mReDraw = true;
+        }
+    }
 
-    //ArrayList
 
     ArrayList<View> viewCollection = new ArrayList<View>();
 
@@ -373,11 +401,24 @@ public class CardStack extends RelativeLayout {
         mAdapter = adapter;
         adapter.registerDataSetObserver(mOb);
 
+        checkRedraw();
+
         loadData();
     }
 
     private void loadData() {
         boolean addView = true;
+
+        if (mReDraw) {
+            mReDraw = false;
+            removeAllViews();
+            viewCollection.clear();
+
+            for (int i = 0; i < mNumVisible; i++) {
+                addContainerViews();
+            }
+            setupAnimation();
+        }
         for (int i = mNumVisible - 1; i >= 0; i--) {
             ViewGroup parent = (ViewGroup) viewCollection.get(i);
             int index = (mIndex + mNumVisible - 1) - i;
@@ -415,9 +456,6 @@ public class CardStack extends RelativeLayout {
         if (lastIndex > mAdapter.getCount() - 1) {
             if (mRotateCardDeck) {
                 lastIndex = lastIndex - mAdapter.getCount();
-                if (lastIndex >= mAdapter.getCount()) {
-                    lastIndex = 0;
-                }
                 mRestartIndex = true;
             } else {
                 parent.setVisibility(View.GONE);
