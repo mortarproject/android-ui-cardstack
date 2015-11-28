@@ -119,7 +119,7 @@ public class CardAnimator {
     }
 
     public void initLayout() {
-        int size = mCardCollection.size();
+        //int size = mCardCollection.size();
         for (View v : mCardCollection) {
             int index = mCardCollection.indexOf(v);
             LayoutParams params = new LayoutParams(baseLayout);
@@ -134,7 +134,6 @@ public class CardAnimator {
 
     private void setupRemotes() {
         View topView = getTopView();
-        //Los pongo en cero para que no haga la cosa rara de irse hacia abajo...
         int upDown = mSimpleDismissAnimation ? 0 : REMOTE_DISTANCE;
         mRemoteLayouts[0] = CardUtils.getMoveParams(topView, upDown, -REMOTE_DISTANCE);
         mRemoteLayouts[1] = CardUtils.getMoveParams(topView, upDown, REMOTE_DISTANCE);
@@ -143,7 +142,7 @@ public class CardAnimator {
 
     }
 
-    private View getTopView() {
+    public View getTopView() {
         return mCardCollection.get(mCardCollection.size() - 1);
     }
 
@@ -177,13 +176,15 @@ public class CardAnimator {
 
     }
 
-    public void discard(int direction, final AnimatorListener al) {
-        discard(direction, al, 250);
+    public void discard(int direction, final AnimatorListener al, CardStack.CardEventListener eventListener) {
+        discard(direction, al, 250, eventListener);
     }
-    public void discard(int direction, final AnimatorListener al, long duration) {
+
+    public void discard(int direction, final AnimatorListener al, long duration, CardStack.CardEventListener eventListener) {
         AnimatorSet as = new AnimatorSet();
         ArrayList<Animator> aCollection = new ArrayList<Animator>();
 
+        eventListener.beforeDiscarded(getTopView());
 
         final View topView = getTopView();
         RelativeLayout.LayoutParams topParams = (RelativeLayout.LayoutParams) topView.getLayoutParams();
@@ -219,8 +220,6 @@ public class CardAnimator {
         }
 
         as.addListener(new AnimatorListenerAdapter() {
-
-
             @Override
             public void onAnimationEnd(Animator animation) {
                 reorder();
@@ -233,9 +232,7 @@ public class CardAnimator {
                     RelativeLayout.LayoutParams paramsCopy = new RelativeLayout.LayoutParams(params);
                     mLayoutsMap.put(v, paramsCopy);
                 }
-
             }
-
         });
 
         as.playTogether(aCollection);

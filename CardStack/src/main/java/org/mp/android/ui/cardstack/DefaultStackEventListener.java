@@ -1,5 +1,7 @@
 package org.mp.android.ui.cardstack;
 
+import android.view.View;
+
 public class DefaultStackEventListener implements CardStack.CardEventListener {
 
     private float mThreshold;
@@ -10,9 +12,9 @@ public class DefaultStackEventListener implements CardStack.CardEventListener {
 
     @Override
     public boolean swipeEnd(int section, float distance) {
-        if(distance > mThreshold){
+        if (distance > mThreshold) {
             return true;
-        }else{
+        } else {
             return false;
         }
     }
@@ -29,7 +31,12 @@ public class DefaultStackEventListener implements CardStack.CardEventListener {
     }
 
     @Override
-    public void discarded(int mIndex,int direction) {
+    public void beforeDiscarded(View cardView) {
+
+    }
+
+    @Override
+    public void discarded(int mIndex, int direction) {
 
     }
 
@@ -39,7 +46,7 @@ public class DefaultStackEventListener implements CardStack.CardEventListener {
     }
 
     @Override
-    public void longPressTopCardTapped() {
+    public void longPressTopCard() {
 
     }
 

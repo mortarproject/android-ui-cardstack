@@ -16,7 +16,7 @@ import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
 import java.util.ArrayList;
 
-public class CardStack extends RelativeLayout {
+public class CardStack<T> extends RelativeLayout {
     private static final String LOG_TAG = "CardStack";
     private int mIndex = 0;
     private int mNumVisible = 4;
@@ -32,15 +32,12 @@ public class CardStack extends RelativeLayout {
     private boolean mRandomBackgroundColor;
 
     private boolean mRotateCardDeck;
-
     private boolean mRestartIndex = false;
 
     private int chainEnd = 0;
     private int chainLink = 0;
     private int chainDismissDirection;
     private boolean chainingDismiss = false;
-    //private Queue<View> mIdleStack = new Queue<View>;
-
 
     private CardEventListener mEventListener = new DefaultStackEventListener(300);
     private int mContentResource = 0;
@@ -59,11 +56,13 @@ public class CardStack extends RelativeLayout {
 
         boolean swipeContinue(int section, float distanceX, float distanceY);
 
+        void beforeDiscarded(View cardView);
+
         void discarded(int mIndex, int direction);
 
         void topCardTapped();
 
-        void longPressTopCardTapped();
+        void longPressTopCard();
     }
 
     public boolean isRotateCardDeck() {
@@ -120,8 +119,6 @@ public class CardStack extends RelativeLayout {
             public void onAnimationEnd(Animator arg0) {
                 mCardAnimator.initLayout();
                 mIndex++;
-
-                //mIndex = mIndex%mAdapter.getCount();
                 loadLast();
 
                 //Para rotar el arreglo...
@@ -140,12 +137,31 @@ public class CardStack extends RelativeLayout {
                     callback.onDismissCard();
                 }
             }
-        }, duration);
+        }, duration, mEventListener);
     }
 
     public int getCurrIndex() {
         //sync?
         return mIndex;
+    }
+
+    public View findCardViewByItem(T item) {
+        View cardView = null;
+        int viewIndex = mNumVisible - 1;
+        int itemIndex = mIndex;
+        for (int i = 0; i < mNumVisible; i++) {
+            if (itemIndex >= mAdapter.getCount()) {
+                itemIndex = itemIndex - mAdapter.getCount();
+            }
+            T itemAdapter = (T)mAdapter.getItem(itemIndex);
+            if (itemAdapter.equals(item)) {
+                cardView = viewCollection.get(viewIndex);
+                break;
+            }
+            itemIndex++;
+            viewIndex--;
+        }
+        return cardView;
     }
 
     private void chainDiscardTop() {
@@ -252,10 +268,15 @@ public class CardStack extends RelativeLayout {
         loadData();
     }
 
-    public void setVisibleCardNum(int visiableNum) {
-        mNumVisible = visiableNum;
+    public void setVisibleCards(int visibleCards) {
+        mNumVisible = visibleCards;
         mOriginalNumVisible = mNumVisible;
-        reset(false);
+        if (mAdapter != null) {
+            checkRedraw();
+            reset(false);
+        } else {
+            Log.w(LOG_TAG, "Set visible cards after set adapter...");
+        }
     }
 
     public void setThreshold(int t) {
@@ -313,29 +334,7 @@ public class CardStack extends RelativeLayout {
 
                     boolean discard = mEventListener.swipeEnd(direction, distance);
                     if (discard) {
-                        mCardAnimator.discard(direction, new AnimatorListenerAdapter() {
-
-                            @Override
-                            public void onAnimationEnd(Animator arg0) {
-                                mCardAnimator.initLayout();
-                                mIndex++;
-
-                                //mIndex = mIndex%mAdapter.getCount();
-                                loadLast();
-
-                                //Para rotar el arreglo...
-                                if (mRestartIndex && mIndex > (mAdapter.getCount() - 1)) {
-                                    mIndex = 0;
-                                    mRestartIndex = false;
-                                }
-                                mEventListener.discarded(mIndex, direction);
-
-                                viewCollection.get(0).setOnTouchListener(null);
-                                viewCollection.get(viewCollection.size() - 1)
-                                        .setOnTouchListener(mOnTouchListener);
-                            }
-
-                        });
+                        discardTop(direction);
                     } else {
                         mCardAnimator.reverse(e1, e2);
                     }
@@ -350,7 +349,7 @@ public class CardStack extends RelativeLayout {
 
                 @Override
                 public void onLongPress() {
-                    mEventListener.longPressTopCardTapped();
+                    mEventListener.longPressTopCard();
                 }
             }
             );
@@ -438,6 +437,8 @@ public class CardStack extends RelativeLayout {
             }
         }
     }
+
+
 
     private View getContentView() {
         View contentView = null;
