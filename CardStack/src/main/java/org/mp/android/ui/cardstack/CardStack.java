@@ -288,84 +288,85 @@ public class CardStack<T> extends RelativeLayout {
     }
 
     private void setupAnimation() {
-        boolean addDragListener = true;
-        final View cardView = viewCollection.get(viewCollection.size() - 1);
-        mCardAnimator = new CardAnimator(viewCollection, mAnimateRotationCard, mStickNextCardToTop, mSimpleDismissAnimation, mRandomBackgroundColor);
-        mCardAnimator.initLayout();
+        if (viewCollection.size() > 0) {
+            boolean addDragListener = true;
+            final View cardView = viewCollection.get(viewCollection.size() - 1);
+            mCardAnimator = new CardAnimator(viewCollection, mAnimateRotationCard, mStickNextCardToTop, mSimpleDismissAnimation, mRandomBackgroundColor);
+            mCardAnimator.initLayout();
 
-        if (mRotateCardDeck) {
-            if (viewCollection.size() <= 1) {
-                addDragListener = false;
+            if (mRotateCardDeck) {
+                if (viewCollection.size() <= 1) {
+                    addDragListener = false;
+                }
             }
-        }
-        if (addDragListener) {
-            final DragGestureDetector dd = new DragGestureDetector(CardStack.this.getContext(), new DragGestureDetector.DragListener() {
+            if (addDragListener) {
+                final DragGestureDetector dd = new DragGestureDetector(CardStack.this.getContext(), new DragGestureDetector.DragListener() {
 
-                @Override
-                public boolean onDragStart(MotionEvent e1, MotionEvent e2,
-                                           float distanceX, float distanceY) {
-                    mCardAnimator.drag(e1, e2, distanceX, distanceY);
-                    return true;
-                }
-
-                @Override
-                public boolean onDragContinue(MotionEvent e1, MotionEvent e2,
-                                              float distanceX, float distanceY) {
-                    float x1 = e1.getRawX();
-                    float y1 = e1.getRawY();
-                    float x2 = e2.getRawX();
-                    float y2 = e2.getRawY();
-                    //float distance = CardUtils.distance(x1,y1,x2,y2);
-                    final int direction = CardUtils.direction(x1, y1, x2, y2);
-                    mCardAnimator.drag(e1, e2, distanceX, distanceY);
-                    mEventListener.swipeContinue(direction, Math.abs(x2 - x1), Math.abs(y2 - y1));
-                    return true;
-                }
-
-                @Override
-                public boolean onDragEnd(MotionEvent e1, MotionEvent e2) {
-                    //reverse(e1,e2);
-                    float x1 = e1.getRawX();
-                    float y1 = e1.getRawY();
-                    float x2 = e2.getRawX();
-                    float y2 = e2.getRawY();
-                    float distance = CardUtils.distance(x1, y1, x2, y2);
-                    final int direction = CardUtils.direction(x1, y1, x2, y2);
-
-                    boolean discard = mEventListener.swipeEnd(direction, distance);
-                    if (discard) {
-                        discardTop(direction);
-                    } else {
-                        mCardAnimator.reverse(e1, e2);
+                    @Override
+                    public boolean onDragStart(MotionEvent e1, MotionEvent e2,
+                                               float distanceX, float distanceY) {
+                        mCardAnimator.drag(e1, e2, distanceX, distanceY);
+                        return true;
                     }
-                    return true;
-                }
 
-                @Override
-                public boolean onTapUp() {
-                    mEventListener.topCardTapped();
-                    return true;
-                }
+                    @Override
+                    public boolean onDragContinue(MotionEvent e1, MotionEvent e2,
+                                                  float distanceX, float distanceY) {
+                        float x1 = e1.getRawX();
+                        float y1 = e1.getRawY();
+                        float x2 = e2.getRawX();
+                        float y2 = e2.getRawY();
+                        //float distance = CardUtils.distance(x1,y1,x2,y2);
+                        final int direction = CardUtils.direction(x1, y1, x2, y2);
+                        mCardAnimator.drag(e1, e2, distanceX, distanceY);
+                        mEventListener.swipeContinue(direction, Math.abs(x2 - x1), Math.abs(y2 - y1));
+                        return true;
+                    }
 
-                @Override
-                public void onLongPress() {
-                    mEventListener.longPressTopCard();
+                    @Override
+                    public boolean onDragEnd(MotionEvent e1, MotionEvent e2) {
+                        //reverse(e1,e2);
+                        float x1 = e1.getRawX();
+                        float y1 = e1.getRawY();
+                        float x2 = e2.getRawX();
+                        float y2 = e2.getRawY();
+                        float distance = CardUtils.distance(x1, y1, x2, y2);
+                        final int direction = CardUtils.direction(x1, y1, x2, y2);
+
+                        boolean discard = mEventListener.swipeEnd(direction, distance);
+                        if (discard) {
+                            discardTop(direction);
+                        } else {
+                            mCardAnimator.reverse(e1, e2);
+                        }
+                        return true;
+                    }
+
+                    @Override
+                    public boolean onTapUp() {
+                        mEventListener.topCardTapped();
+                        return true;
+                    }
+
+                    @Override
+                    public void onLongPress() {
+                        mEventListener.longPressTopCard();
+                    }
                 }
+                );
+
+                mOnTouchListener = new OnTouchListener() {
+                    private static final String DEBUG_TAG = "MotionEvents";
+
+                    @Override
+                    public boolean onTouch(View arg0, MotionEvent event) {
+                        dd.onTouchEvent(event);
+                        return true;
+                    }
+                };
+                cardView.setOnTouchListener(mOnTouchListener);
             }
-            );
-
-            mOnTouchListener = new OnTouchListener() {
-                private static final String DEBUG_TAG = "MotionEvents";
-
-                @Override
-                public boolean onTouch(View arg0, MotionEvent event) {
-                    dd.onTouchEvent(event);
-                    return true;
-                }
-            };
-            cardView.setOnTouchListener(mOnTouchListener);
         }
-
     }
 
     private DataSetObserver mOb = new DataSetObserver() {
