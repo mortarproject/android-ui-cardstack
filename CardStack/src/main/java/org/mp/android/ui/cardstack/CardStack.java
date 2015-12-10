@@ -408,32 +408,34 @@ public class CardStack<T> extends RelativeLayout {
     private void loadData() {
         boolean addView = true;
 
-        if (mReDraw) {
-            mReDraw = false;
-            removeAllViews();
-            viewCollection.clear();
+        if (mAdapter.getCount() > 0) {
+            if (mReDraw) {
+                mReDraw = false;
+                removeAllViews();
+                viewCollection.clear();
 
-            for (int i = 0; i < mNumVisible; i++) {
-                addContainerViews();
-            }
-            setupAnimation();
-        }
-        for (int i = mNumVisible - 1; i >= 0; i--) {
-            ViewGroup parent = (ViewGroup) viewCollection.get(i);
-            int index = (mIndex + mNumVisible - 1) - i;
-            if (index > mAdapter.getCount() - 1) {
-                if (mRotateCardDeck) {
-                    //Start from the beginning of the deck
-                    index = index - mAdapter.getCount();
-                } else {
-                    parent.setVisibility(View.GONE);
-                    addView = false;
+                for (int i = 0; i < mNumVisible; i++) {
+                    addContainerViews();
                 }
+                setupAnimation();
             }
-            if (addView) {
-                View child = mAdapter.getView(index, getContentView(), this);
-                parent.addView(child);
-                parent.setVisibility(View.VISIBLE);
+            for (int i = mNumVisible - 1; i >= 0; i--) {
+                ViewGroup parent = (ViewGroup) viewCollection.get(i);
+                int index = (mIndex + mNumVisible - 1) - i;
+                if (index > mAdapter.getCount() - 1) {
+                    if (mRotateCardDeck) {
+                        //Start from the beginning of the deck
+                        index = index - mAdapter.getCount();
+                    } else {
+                        parent.setVisibility(View.GONE);
+                        addView = false;
+                    }
+                }
+                if (addView) {
+                    View child = mAdapter.getView(index, getContentView(), this);
+                    parent.addView(child);
+                    parent.setVisibility(View.VISIBLE);
+                }
             }
         }
     }
