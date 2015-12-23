@@ -14,6 +14,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
+
 import java.util.ArrayList;
 
 public class CardStack<T> extends RelativeLayout {
@@ -153,7 +154,7 @@ public class CardStack<T> extends RelativeLayout {
             if (itemIndex >= mAdapter.getCount()) {
                 itemIndex = itemIndex - mAdapter.getCount();
             }
-            T itemAdapter = (T)mAdapter.getItem(itemIndex);
+            T itemAdapter = (T) mAdapter.getItem(itemIndex);
             if (itemAdapter.equals(item)) {
                 cardView = viewCollection.get(viewIndex);
                 break;
@@ -196,8 +197,10 @@ public class CardStack<T> extends RelativeLayout {
                     chainDiscardTop();
                 }
             } else {
+                mEventListener.beforeDiscarded(mCardAnimator.getTopView());
                 mIndex = index;
                 reset(false);
+                mEventListener.discarded(mIndex, -1);
             }
         } else {
             Log.w(LOG_TAG, "Index card to go is out of bounds of deck.");
@@ -352,9 +355,7 @@ public class CardStack<T> extends RelativeLayout {
                     public void onLongPress() {
                         mEventListener.longPressTopCard();
                     }
-                }
-                );
-
+                });
                 mOnTouchListener = new OnTouchListener() {
                     private static final String DEBUG_TAG = "MotionEvents";
 
@@ -364,8 +365,46 @@ public class CardStack<T> extends RelativeLayout {
                         return true;
                     }
                 };
-                cardView.setOnTouchListener(mOnTouchListener);
+            } else {
+                final DragGestureDetector td = new DragGestureDetector(CardStack.this.getContext(), new DragGestureDetector.DragListener() {
+                    @Override
+                    public boolean onDragStart(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean onDragContinue(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean onDragEnd(MotionEvent e1, MotionEvent e2) {
+                        return false;
+                    }
+
+                    @Override
+                    public boolean onTapUp() {
+                        mEventListener.topCardTapped();
+                        return true;
+                    }
+
+                    @Override
+                    public void onLongPress() {
+                        mEventListener.longPressTopCard();
+                    }
+                });
+                mOnTouchListener = new OnTouchListener() {
+                    private static final String DEBUG_TAG = "MotionEvents";
+
+                    @Override
+                    public boolean onTouch(View arg0, MotionEvent event) {
+                        td.onTouchEvent(event);
+                        return true;
+                    }
+                };
             }
+
+            cardView.setOnTouchListener(mOnTouchListener);
         }
     }
 
@@ -373,7 +412,7 @@ public class CardStack<T> extends RelativeLayout {
         @Override
         public void onChanged() {
             checkRedraw();
-            reset(false);
+            reset(true);
         }
     };
 
@@ -440,7 +479,6 @@ public class CardStack<T> extends RelativeLayout {
             }
         }
     }
-
 
 
     private View getContentView() {
