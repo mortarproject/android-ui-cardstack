@@ -166,17 +166,16 @@ public class CardStack<T> extends RelativeLayout {
     }
 
     private void chainDiscardTop() {
+        if (chainLink == chainEnd) {
+            chainingDismiss = false;
+        }
         discardTop(chainDismissDirection, new CardStackCallback() {
             @Override
             public void onDismissCard() {
                 if (chainLink < chainEnd) {
                     chainLink++;
                     chainDismissDirection = chainDismissDirection == CardAnimator.DISMISS_DOWN_RIGHT ? CardAnimator.DISMISS_DOWN_LEFT : CardAnimator.DISMISS_DOWN_RIGHT;
-                    if (chainLink == chainEnd) {
-                        chainingDismiss = false;
-                    }
                     chainDiscardTop();
-
                 }
             }
         }, 200);
